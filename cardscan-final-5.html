@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CardScan</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c27;--border:#2a2a3d;
+  --accent:#7c6af7;--accent2:#e05fff;--text:#f0effe;--muted:#7a7a9a;
+  --success:#3de8a0;--error:#ff5f7a;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace}
+header{padding:18px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:50}
+.logo{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;flex-shrink:0}
+header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;background:linear-gradient(90deg,var(--text),var(--muted));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.key-btn{margin-left:auto;font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);color:var(--muted);background:none;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:.05em;text-transform:uppercase}
+.key-btn.set{color:var(--success);border-color:rgba(61,232,160,.3);background:rgba(61,232,160,.08)}
+main{padding:20px;display:flex;flex-direction:column;gap:16px;max-width:500px;margin:0 auto}
+
+/* SCREENS */
+.screen{display:none;flex-direction:column;gap:16px}
+.screen.active{display:flex}
+
+/* SETUP */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:22px}
+.card h2{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:10px}
+.card p{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px}
+.card a{color:var(--accent)}
+.steps{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.step{display:flex;gap:10px;font-size:12px;color:var(--muted);line-height:1.5}
+.snum{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;flex-shrink:0;margin-top:1px}
+.inp-wrap{position:relative;margin-bottom:12px}
+.inp{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:13px 44px 13px 14px;outline:none}
+.inp:focus{border-color:var(--accent)}
+.eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px}
+.note{background:rgba(61,232,160,.08);border:1px solid rgba(61,232,160,.2);border-radius:10px;padding:11px 13px;font-size:11px;color:var(--success);line-height:1.6;margin-bottom:14px}
+
+/* BUTTONS */
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:opacity .2s,transform .15s;letter-spacing:.02em}
+.btn:active{transform:scale(.97);opacity:.9}
+.btn-grad{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.btn-outline{background:var(--surface2);color:var(--muted);border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:13px}
+.btn-outline:hover{color:var(--text)}
+.row{display:flex;gap:10px}
+.row .btn{flex:1}
+.row .btn-sm{padding:14px 16px;flex:0 0 auto}
+
+/* UPLOAD */
+.upload-zone{border:1.5px dashed var(--border);border-radius:18px;padding:30px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;background:var(--surface);cursor:pointer;text-align:center}
+.upload-zone:active{border-color:var(--accent);background:#1a1830}
+.upload-icon{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,rgba(124,106,247,.2),rgba(224,95,255,.2));border:1px solid rgba(124,106,247,.3);display:flex;align-items:center;justify-content:center;font-size:24px}
+.upload-zone h2{font-family:'Syne',sans-serif;font-weight:700;font-size:17px}
+.upload-zone p{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* PREVIEW */
+.preview-box{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
+.preview-box img{width:100%;max-height:200px;object-fit:cover;display:block}
+.preview-bar{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(10,10,15,.9));padding:10px 12px;display:flex;align-items:center}
+.preview-bar span{font-size:11px;color:var(--success);text-transform:uppercase;letter-spacing:.1em}
+.change-btn{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-family:'DM Mono',monospace;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer}
+
+/* LOADING */
+.loading-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.spin-wrap{width:60px;height:60px;position:relative}
+.ring{position:absolute;border-radius:50%;border:2px solid transparent}
+.ring1{inset:0;border-top-color:var(--accent);border-right-color:var(--accent2);animation:spin 1s linear infinite}
+.ring2{inset:8px;border-top-color:var(--accent2);border-right-color:var(--accent);animation:spin .7s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-box h3{font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
+.loading-box p{font-size:12px;color:var(--muted);text-align:center}
+
+/* RESULTS */
+.result-card{background:#16161f;border:1px solid var(--border);border-radius:18px;overflow:hidden}
+.result-top{background:linear-gradient(135deg,rgba(124,106,247,.15),rgba(224,95,255,.1));padding:18px;border-bottom:1px solid var(--border);display:flex;gap:14px;align-items:center}
+.avatar{width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:19px;color:#fff;flex-shrink:0}
+.result-top h3{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;line-height:1.2}
+.result-top .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.field-row{display:flex;border-bottom:1px solid var(--border)}
+.field-row:last-child{border-bottom:none}
+.flabel{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:13px 14px;min-width:85px;flex-shrink:0;padding-top:15px}
+.finput{flex:1;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:12px 14px 12px 0;outline:none;line-height:1.5}
+textarea.finput{resize:none}
+.finput:focus{background:rgba(124,106,247,.05)}
+.edit-note{font-size:11px;color:var(--muted);text-align:center;padding:6px;letter-spacing:.03em}
+.edit-note b{color:var(--accent);font-weight:400}
+
+/* IMPORT HINT */
+.import-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px;font-size:12px;color:var(--muted);line-height:1.7}
+.import-box strong{color:var(--text)}
+.import-box ol{margin-top:8px;padding-left:18px}
+.import-box li{margin-bottom:3px}
+
+/* ERROR */
+.err{background:rgba(255,95,122,.1);border:1px solid rgba(255,95,122,.3);border-radius:12px;padding:13px 15px;font-size:13px;color:var(--error);line-height:1.5}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--success);color:#0a0a0f;padding:11px 22px;border-radius:40px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;transition:transform .35s cubic-bezier(.175,.885,.32,1.275);z-index:999;white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">C</div>
+  <h1>CardScan</h1>
+  <button class="key-btn" id="keyBtn" onclick="goSetup()">⚙ API Key</button>
+</header>
+<main>
+
+  <!-- SETUP SCREEN -->
+  <div class="screen" id="screenSetup">
+    <div class="card">
+      <h2>🔑 One-time Setup</h2>
+      <p>You need a free Anthropic API key. Get one at the link below — takes 2 minutes. Your key stays on this device only.</p>
+      <div class="steps">
+        <div class="step"><div class="snum">1</div><span>Go to <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a></span></div>
+        <div class="step"><div class="snum">2</div><span>Sign in or create a free account</span></div>
+        <div class="step"><div class="snum">3</div><span>Tap <b style="color:var(--text)">Create Key</b>, copy it</span></div>
+        <div class="step"><div class="snum">4</div><span>Paste below and tap Save</span></div>
+      </div>
+      <div class="inp-wrap">
+        <input class="inp" type="password" id="keyInput" placeholder="sk-ant-api03-...">
+        <button class="eye" onclick="toggleEye()">👁</button>
+      </div>
+      <div class="note">🔒 Stored only on this device. Never shared with anyone except Anthropic when scanning.</div>
+      <button class="btn btn-grad" onclick="saveKey()">Save Key &amp; Start Scanning</button>
+    </div>
+  </div>
+
+  <!-- SCAN SCREEN -->
+  <div class="screen" id="screenScan">
+    <!-- Upload zone -->
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">📇</div>
+      <h2>Scan a Business Card</h2>
+      <p>Take a photo or choose from gallery</p>
+      <div class="row" style="margin-top:4px">
+        <button class="btn btn-grad" style="padding:10px 18px;font-size:13px" onclick="document.getElementById('camInput').click()">📷 Camera</button>
+        <button class="btn btn-outline" style="padding:10px 18px" onclick="document.getElementById('fileInput').click()">📁 Gallery</button>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="previewBox" style="display:none">
+      <div class="preview-box">
+        <img id="previewImg" src="" alt="">
+        <div class="preview-bar">
+          <span>✓ Card loaded</span>
+          <button class="change-btn" onclick="resetScan()">Change</button>
+        </div>
+      </div>
+      <button class="btn btn-grad" style="margin-top:12px" onclick="doScan()">✦ Extract Contact Details</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="loadingBox" style="display:none">
+      <div class="loading-box">
+        <div class="spin-wrap">
+          <div class="ring ring1"></div>
+          <div class="ring ring2"></div>
+        </div>
+        <h3>Scanning card...</h3>
+        <p>Claude AI is reading the card<br>and pulling contact details</p>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="err" id="errBox" style="display:none"></div>
+
+    <!-- Results -->
+    <div id="resultsBox" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px">Contact Details</span>
+        <span style="background:rgba(61,232,160,.15);color:var(--success);border:1px solid rgba(61,232,160,.3);padding:3px 10px;border-radius:20px;font-size:11px;letter-spacing:.08em;text-transform:uppercase">✓ Extracted</span>
+      </div>
+
+      <div class="result-card">
+        <div class="result-top">
+          <div class="avatar" id="rAvatar">?</div>
+          <div>
+            <h3 id="rName">—</h3>
+            <div class="sub" id="rSub">—</div>
+          </div>
+        </div>
+        <div class="field-row"><span class="flabel">Name</span><input class="finput" id="fName" type="text" placeholder="Full name" oninput="updateHeader()"></div>
+        <div class="field-row"><span class="flabel">Title</span><input class="finput" id="fTitle" type="text" placeholder="Job title" oninput="updateHeader()"></div>
+        <div class="field-row"><span class="flabel">Company</span><input class="finput" id="fCompany" type="text" placeholder="Company" oninput="updateHeader()"></div>
+        <div class="field-row"><span class="flabel">Phone</span><input class="finput" id="fPhone" type="text" placeholder="Phone"></div>
+        <div class="field-row"><span class="flabel">Email</span><input class="finput" id="fEmail" type="email" placeholder="Email"></div>
+        <div class="field-row"><span class="flabel">Address</span><textarea class="finput" id="fAddress" rows="2" placeholder="Address"></textarea></div>
+      </div>
+
+      <p class="edit-note">Tap any field to <b>edit</b> before saving</p>
+
+      <div class="row" style="margin-top:4px">
+        <button class="btn btn-grad" onclick="downloadVCF()">⬇ Save to Contacts (.vcf)</button>
+        <button class="btn btn-outline btn-sm" onclick="resetScan()">↺</button>
+      </div>
+
+      <div class="import-box" id="importBox" style="display:none;margin-top:4px">
+        <strong>📱 To import on Samsung S25 Ultra:</strong>
+        <ol>
+          <li>Open Downloads, tap the .vcf file</li>
+          <li>Samsung Contacts opens automatically</li>
+          <li>Tap <strong>Import</strong></li>
+        </ol>
+      </div>
+    </div>
+
+    <input type="file" id="camInput" accept="image/*" capture="environment">
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE = 'cs_key';
+let imgB64 = null;
+
+function init() {
+  const k = localStorage.getItem(STORE);
+  if (k) { showScan(); } else { showSetup(); }
+}
+
+function showSetup() {
+  document.getElementById('screenSetup').classList.add('active');
+  document.getElementById('screenScan').classList.remove('active');
+  document.getElementById('keyBtn').textContent = '⚙ API Key';
+  document.getElementById('keyBtn').classList.remove('set');
+}
+
+function showScan() {
+  document.getElementById('screenSetup').classList.remove('active');
+  document.getElementById('screenScan').classList.add('active');
+  document.getElementById('keyBtn').textContent = '✓ Key Set';
+  document.getElementById('keyBtn').classList.add('set');
+}
+
+function goSetup() {
+  const k = localStorage.getItem(STORE);
+  if (k) document.getElementById('keyInput').value = k;
+  showSetup();
+}
+
+function toggleEye() {
+  const i = document.getElementById('keyInput');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+
+function saveKey() {
+  const v = document.getElementById('keyInput').value.trim();
+  if (!v.startsWith('sk-ant-')) { alert('Key should start with sk-ant- — please check and try again.'); return; }
+  localStorage.setItem(STORE, v);
+  showScan();
+  toast('✓ Key saved!');
+}
+
+document.getElementById('camInput').onchange = e => loadFile(e.target.files[0]);
+document.getElementById('fileInput').onchange = e => loadFile(e.target.files[0]);
+
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const r = new FileReader();
+  r.onload = e => {
+    imgB64 = e.target.result.split(',')[1];
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('uploadZone').style.display = 'none';
+    document.getElementById('previewBox').style.display = 'block';
+    document.getElementById('loadingBox').style.display = 'none';
+    document.getElementById('resultsBox').style.display = 'none';
+    document.getElementById('errBox').style.display = 'none';
+  };
+  r.readAsDataURL(file);
+  document.getElementById('camInput').value = '';
+  document.getElementById('fileInput').value = '';
+}
+
+async function doScan() {
+  if (!imgB64) return;
+  const key = localStorage.getItem(STORE);
+  if (!key) { goSetup(); return; }
+
+  document.getElementById('previewBox').style.display = 'none';
+  document.getElementById('loadingBox').style.display = 'block';
+  document.getElementById('resultsBox').style.display = 'none';
+  document.getElementById('errBox').style.display = 'none';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 800,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imgB64 } },
+            { type: 'text', text: 'Read this business card and return ONLY a JSON object, no extra text, no markdown:\n{"name":"","title":"","company":"","phone":"","phone2":"","email":"","address":""}' }
+          ]
+        }]
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      const msg = data?.error?.message || '';
+      if (res.status === 401) throw new Error('Invalid API key. Tap ⚙ Key Set to update it.');
+      throw new Error(msg || 'API error ' + res.status);
+    }
+
+    const raw = (data.content || []).map(b => b.text || '').join('').trim();
+    const clean = raw.replace(/```json|```/g, '').trim();
+    
+    let contact;
+    try { contact = JSON.parse(clean); }
+    catch { throw new Error('Could not read card. Try a clearer, brighter photo.'); }
+
+    fillFields(contact);
+    document.getElementById('loadingBox').style.display = 'none';
+    document.getElementById('resultsBox').style.display = 'block';
+    window.scrollTo(0, 0);
+
+  } catch(e) {
+    document.getElementById('loadingBox').style.display = 'none';
+    document.getElementById('previewBox').style.display = 'block';
+    showErr(e.message || 'Something went wrong. Please try again.');
+  }
+}
+
+function fillFields(c) {
+  document.getElementById('fName').value = c.name || '';
+  document.getElementById('fTitle').value = c.title || '';
+  document.getElementById('fCompany').value = c.company || '';
+  const phones = [c.phone, c.phone2].filter(Boolean).join(' / ');
+  document.getElementById('fPhone').value = phones;
+  document.getElementById('fEmail').value = c.email || '';
+  document.getElementById('fAddress').value = c.address || '';
+  updateHeader();
+}
+
+function updateHeader() {
+  const n = document.getElementById('fName').value;
+  const t = document.getElementById('fTitle').value;
+  const co = document.getElementById('fCompany').value;
+  document.getElementById('rName').textContent = n || '—';
+  document.getElementById('rSub').textContent = [t,co].filter(Boolean).join(' · ') || '—';
+  document.getElementById('rAvatar').textContent = n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || '?';
+}
+
+function downloadVCF() {
+  const n = document.getElementById('fName').value.trim();
+  const t = document.getElementById('fTitle').value.trim();
+  const co = document.getElementById('fCompany').value.trim();
+  const ph = document.getElementById('fPhone').value.trim();
+  const em = document.getElementById('fEmail').value.trim();
+  const ad = document.getElementById('fAddress').value.trim();
+  const parts = n.split(' '); const last = parts.pop()||''; const first = parts.join(' ');
+  let v = 'BEGIN:VCARD\r\nVERSION:3.0\r\n';
+  if(n) v += `FN:${n}\r\nN:${last};${first};;;\r\n`;
+  if(t) v += `TITLE:${t}\r\n`;
+  if(co) v += `ORG:${co}\r\n`;
+  if(ph) ph.split('/').map(p=>p.trim()).filter(Boolean).forEach((p,i)=>{ v += `TEL;TYPE=${i===0?'WORK,VOICE':'CELL'}:${p}\r\n`; });
+  if(em) v += `EMAIL;TYPE=WORK:${em}\r\n`;
+  if(ad) v += `ADR;TYPE=WORK:;;${ad.replace(/\n/g,' ')};;;;\r\n`;
+  v += 'END:VCARD';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([v],{type:'text/vcard'}));
+  a.download = (n||'contact').replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.vcf';
+  a.click();
+  document.getElementById('importBox').style.display = 'block';
+  toast('✓ Contact downloaded!');
+}
+
+function resetScan() {
+  imgB64 = null;
+  document.getElementById('uploadZone').style.display = 'flex';
+  document.getElementById('previewBox').style.display = 'none';
+  document.getElementById('loadingBox').style.display = 'none';
+  document.getElementById('resultsBox').style.display = 'none';
+  document.getElementById('errBox').style.display = 'none';
+  document.getElementById('importBox').style.display = 'none';
+}
+
+function showErr(msg) {
+  const e = document.getElementById('errBox');
+  e.textContent = '⚠ ' + msg;
+  e.style.display = 'block';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+init();
+</script>
+</body>
+</html>
