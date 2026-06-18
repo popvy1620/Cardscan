@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CardScan</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f; --s1: #111118; --s2: #1a1a24;
+    --border: rgba(255,255,255,0.08);
+    --accent: #00e5a0; --accent2: #0099ff;
+    --text: #f0f0f5; --muted: #888;
+    --danger: #ff4d4d; --warn: #ffb347;
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 16px 16px 40px; }
+  .logo { display: flex; align-items: center; gap: 8px; margin: 16px 0 24px; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo h1 span { color: var(--accent); }
+  .card { background: var(--s1); border: 1px solid var(--border); border-radius: 16px; padding: 20px; width: 100%; max-width: 440px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
+  .input-wrap { position: relative; margin-top: 12px; }
+  .input-wrap input { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 44px 12px 14px; color: var(--text); font-size: 14px; outline: none; }
+  .input-wrap input:focus { border-color: var(--accent); }
+  .eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; }
+  .field-label-sm { font-size: 12px; color: var(--muted); margin: 14px 0 4px; }
+  .plain-input { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 13px; outline: none; }
+  .plain-input:focus { border-color: var(--accent2); }
+  .save-btn { width: 100%; margin-top: 14px; padding: 13px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; color: #000; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .settings-toggle { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0 auto 16px; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn { padding: 14px; border: 1px solid var(--border); background: var(--s2); border-radius: 12px; color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #000; }
+  .btn.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  #preview-wrap { display: none; margin-bottom: 16px; position: relative; }
+  #preview-img { width: 100%; border-radius: 12px; border: 1px solid var(--border); max-height: 200px; object-fit: cover; }
+  .change-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+  .field-group { margin-bottom: 10px; }
+  .field-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .field-input { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px; outline: none; }
+  .field-input:focus { border-color: var(--accent); }
+  .sf-btn { width: 100%; margin-top: 12px; padding: 14px; background: #00a1e0; border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .sf-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .vcf-btn { width: 100%; margin-top: 8px; padding: 13px; background: var(--s2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .reset-btn { width: 100%; margin-top: 10px; padding: 11px; background: none; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); font-size: 13px; cursor: pointer; }
+  .status-box { border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.5; margin-top: 12px; display: none; }
+  .status-box.success { background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3); color: var(--accent); }
+  .status-box.duplicate { background: rgba(255,179,71,0.1); border: 1px solid rgba(255,179,71,0.3); color: var(--warn); }
+  .status-box.error { background: rgba(255,77,77,0.1); border: 1px solid rgba(255,77,77,0.3); color: var(--danger); }
+  .status-box.loading { background: rgba(0,153,255,0.1); border: 1px solid rgba(0,153,255,0.3); color: var(--accent2); }
+  .status-link { color: var(--accent2); text-decoration: underline; word-break: break-all; }
+  .scanning-box { display: none; text-align: center; padding: 24px; }
+  .dot-row { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100% { opacity:0.2; transform:scale(0.8); } 40% { opacity:1; transform:scale(1); } }
+  .scanning-box p { color: var(--muted); font-size: 13px; }
+  input[type="file"] { display: none; }
+  canvas { display: none; }
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <div class="logo-icon">📇</div>
+  <h1>Card<span>Scan</span></h1>
+</div>
+
+<div class="card" id="setup-card">
+  <div class="card-title">⚙️ One-Time Setup</div>
+  <div class="field-label-sm">Anthropic API Key</div>
+  <div class="input-wrap">
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+    <button class="eye-btn" onclick="toggleEye()">👁</button>
+  </div>
+  <div class="field-label-sm">☁️ Cloudflare Worker URL</div>
+  <input class="plain-input" type="url" id="worker-url-input" placeholder="https://rapid-frost-6800.jcott8787.workers.dev" />
+  <button class="save-btn" onclick="saveSetup()">Save & Start Scanning</button>
+</div>
+
+<button class="settings-toggle" id="settings-toggle" style="display:none;" onclick="showSetup()">⚙️ API Settings</button>
+
+<div class="card" id="scan-card" style="display:none;">
+  <div class="card-title">📷 Scan a Business Card</div>
+  <div class="btn-row">
+    <button class="btn" onclick="document.getElementById('cam-input').click()">📷 Camera</button>
+    <button class="btn" onclick="document.getElementById('gallery-input').click()">📁 Gallery</button>
+  </div>
+  <input type="file" id="cam-input" accept="image/*" capture="environment" onchange="loadImage(this)">
+  <input type="file" id="gallery-input" accept="image/*" onchange="loadImage(this)">
+  <canvas id="compress-canvas"></canvas>
+  <div id="preview-wrap">
+    <img id="preview-img" />
+    <button class="change-btn" onclick="resetScan()">↺ Change</button>
+  </div>
+  <button class="btn primary" id="extract-btn" onclick="extractCard()" disabled>✦ Extract Contact Details</button>
+  <div class="scanning-box" id="scanning-box">
+    <div class="dot-row"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <p>Reading card...</p>
+  </div>
+</div>
+
+<div class="card" id="results-card" style="display:none;">
+  <div class="card-title">✅ Contact Details</div>
+  <div class="field-group"><div class="field-label">Name</div><input class="field-input" id="f-name" /></div>
+  <div class="field-group"><div class="field-label">Title</div><input class="field-input" id="f-title" /></div>
+  <div class="field-group"><div class="field-label">Company</div><input class="field-input" id="f-company" /></div>
+  <div class="field-group"><div class="field-label">Phone</div><input class="field-input" id="f-phone" /></div>
+  <div class="field-group"><div class="field-label">Email</div><input class="field-input" id="f-email" /></div>
+  <div class="field-group"><div class="field-label">Address</div><input class="field-input" id="f-address" /></div>
+  <button class="sf-btn" id="sf-btn" onclick="pushToSalesforce()">☁️ Push to Salesforce</button>
+  <div id="sf-status" class="status-box"></div>
+  <button class="vcf-btn" onclick="saveVCF()">⬇ Save to Contacts (.vcf)</button>
+  <button class="reset-btn" onclick="resetAll()">↺ Scan Another Card</button>
+</div>
+
+<script>
+let imageBase64 = null;
+let imageType = 'image/jpeg';
+
+function toggleEye() {
+  const i = document.getElementById('api-key-input');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+
+function saveSetup() {
+  const key = document.getElementById('api-key-input').value.trim();
+  const worker = document.getElementById('worker-url-input').value.trim();
+  if (!key) { alert('Please enter your Anthropic API key'); return; }
+  if (!worker) { alert('Please enter your Cloudflare Worker URL'); return; }
+  localStorage.setItem('cs_key', key);
+  localStorage.setItem('cs_worker', worker.replace(/\/$/, ''));
+  showScanUI();
+}
+
+function showScanUI() {
+  document.getElementById('setup-card').style.display = 'none';
+  document.getElementById('scan-card').style.display = 'block';
+  document.getElementById('settings-toggle').style.display = 'flex';
+}
+
+function showSetup() {
+  document.getElementById('setup-card').style.display = 'block';
+  document.getElementById('api-key-input').value = localStorage.getItem('cs_key') || '';
+  document.getElementById('worker-url-input').value = localStorage.getItem('cs_worker') || '';
+}
+
+function compressImage(file, maxWidth, quality) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.getElementById('compress-canvas');
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(dataUrl.split(',')[1]);
+    };
+    img.src = url;
+  });
+}
+
+function loadImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('extract-btn').disabled = false;
+    document.getElementById('results-card').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+  // Store file for compression later
+  window._pendingFile = file;
+}
+
+async function extractCard() {
+  const workerUrl = localStorage.getItem('cs_worker');
+  if (!workerUrl || !window._pendingFile) return;
+
+  document.getElementById('extract-btn').disabled = true;
+  document.getElementById('scanning-box').style.display = 'block';
+  document.getElementById('results-card').style.display = 'none';
+
+  try {
+    // Compress to max 800px wide, 70% quality — keeps it well under 1MB
+    const compressed = await compressImage(window._pendingFile, 800, 0.7);
+    imageBase64 = compressed;
+
+    const res = await fetch(workerUrl + '/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64, imageType: 'image/jpeg' })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Worker error: ' + err);
+    }
+
+    const contact = await res.json();
+
+    document.getElementById('f-name').value = contact.name || '';
+    document.getElementById('f-title').value = contact.title || '';
+    document.getElementById('f-company').value = contact.company || '';
+    document.getElementById('f-phone').value = contact.phone || '';
+    document.getElementById('f-email').value = contact.email || '';
+    document.getElementById('f-address').value = contact.address || '';
+
+    document.getElementById('scanning-box').style.display = 'none';
+    document.getElementById('results-card').style.display = 'block';
+    document.getElementById('sf-status').style.display = 'none';
+
+  } catch (err) {
+    document.getElementById('scanning-box').style.display = 'none';
+    document.getElementById('extract-btn').disabled = false;
+    alert('Error: ' + err.message);
+  }
+}
+
+async function pushToSalesforce() {
+  const workerUrl = localStorage.getItem('cs_worker');
+  if (!workerUrl) return;
+
+  const contact = {
+    name: document.getElementById('f-name').value,
+    title: document.getElementById('f-title').value,
+    company: document.getElementById('f-company').value,
+    phone: document.getElementById('f-phone').value,
+    email: document.getElementById('f-email').value,
+    address: document.getElementById('f-address').value,
+  };
+
+  const btn = document.getElementById('sf-btn');
+  const status = document.getElementById('sf-status');
+
+  btn.disabled = true;
+  btn.textContent = 'Pushing...';
+  status.className = 'status-box loading';
+  status.style.display = 'block';
+  status.textContent = 'Connecting to Salesforce...';
+
+  try {
+    const res = await fetch(workerUrl + '/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(contact)
+    });
+
+    const data = await res.json();
+
+    if (data.status === 'created') {
+      status.className = 'status-box success';
+      status.innerHTML = `✅ Contact created!<br><a class="status-link" href="${data.sfUrl}" target="_blank">View in Salesforce →</a>`;
+      btn.textContent = '✓ Done';
+    } else if (data.status === 'duplicate') {
+      const ex = data.existing;
+      status.className = 'status-box duplicate';
+      status.innerHTML = `⚠️ Already exists: <strong>${ex.FirstName} ${ex.LastName}</strong><br><a class="status-link" href="${data.sfUrl}" target="_blank">View record →</a>`;
+      btn.disabled = false;
+      btn.textContent = '☁️ Push to Salesforce';
+    } else {
+      status.className = 'status-box error';
+      status.textContent = '❌ ' + (data.error || JSON.stringify(data));
+      btn.disabled = false;
+      btn.textContent = '☁️ Push to Salesforce';
+    }
+  } catch (err) {
+    status.className = 'status-box error';
+    status.textContent = '❌ ' + err.message;
+    btn.disabled = false;
+    btn.textContent = '☁️ Push to Salesforce';
+  }
+}
+
+function saveVCF() {
+  const name = document.getElementById('f-name').value;
+  const parts = name.trim().split(' ');
+  const last = parts.length > 1 ? parts.pop() : '';
+  const first = parts.join(' ');
+  const vcf = `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\nN:${last};${first};;;\nORG:${document.getElementById('f-company').value}\nTITLE:${document.getElementById('f-title').value}\nTEL:${document.getElementById('f-phone').value}\nEMAIL:${document.getElementById('f-email').value}\nADR:;;${document.getElementById('f-address').value};;;;\nEND:VCARD`;
+  const blob = new Blob([vcf], { type: 'text/vcard' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${name || 'contact'}.vcf`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetScan() {
+  window._pendingFile = null;
+  imageBase64 = null;
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('extract-btn').disabled = true;
+  document.getElementById('cam-input').value = '';
+  document.getElementById('gallery-input').value = '';
+}
+
+function resetAll() {
+  resetScan();
+  document.getElementById('results-card').style.display = 'none';
+  document.getElementById('scanning-box').style.display = 'none';
+}
+
+window.onload = () => {
+  if (localStorage.getItem('cs_key') && localStorage.getItem('cs_worker')) showScanUI();
+};
+</script>
+</body>
+</html>
